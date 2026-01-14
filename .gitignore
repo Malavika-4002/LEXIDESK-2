@@ -1,0 +1,55 @@
+# ======================
+# Python Environment
+# ======================
+lexidesk_venv/
+venv/
+.env/
+
+# ======================
+# Python Cache
+# ======================
+__pycache__/
+*.pyc
+*.pyo
+
+# ======================
+# DATASETS (DO NOT COMMIT)
+# ======================
+LexiDesk/data/raw/
+LexiDesk/data/processed/
+*.csv
+*.json
+*.jsonl
+*.tsv
+#*.txt
+
+# ======================
+# TRAINED MODELS & VECTORIZERS
+# ======================
+LexiDesk/models/**/*.pt
+LexiDesk/models/**/*.pth
+LexiDesk/models/**/*.joblib
+LexiDesk/models/**/*.bin
+LexiDesk/models/**/checkpoints/
+
+# ======================
+# EVALUATION OUTPUTS
+# ======================
+LexiDesk/evaluation/**/plots/
+LexiDesk/evaluation/**/segmented_sentences/
+LexiDesk/evaluation/**/*.png
+LexiDesk/evaluation/**/*.json
+
+# ======================
+# Logs & Runs
+# ======================
+logs/
+runs/
+outputs/
+
+# ======================
+# IDE / OS
+# ======================
+.vscode/
+.DS_Store
+Thumbs.db

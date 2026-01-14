@@ -1,0 +1,9 @@
+numpy
+pandas
+scikit-learn
+joblib
+tqdm
+sentencepiece
+torch
+torchvision
+sklearn_srfsuite
