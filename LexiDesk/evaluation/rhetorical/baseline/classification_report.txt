@@ -1,0 +1,13 @@
+                         precision    recall  f1-score   support
+
+Arguments of Petitioner     0.2551    0.3644    0.3001     14520
+Arguments of Respondent     0.2054    0.3558    0.2604      9579
+               Decision     0.3692    0.6584    0.4731      3841
+                  Facts     0.4111    0.6320    0.4982     24909
+                  Issue     0.1529    0.5312    0.2374      1843
+              Reasoning     0.4540    0.3734    0.4098     36689
+                    nan     0.6109    0.3219    0.4216     58500
+
+               accuracy                         0.4035    149881
+              macro avg     0.3512    0.4624    0.3715    149881
+           weighted avg     0.4671    0.4035    0.4084    149881
