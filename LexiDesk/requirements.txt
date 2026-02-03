@@ -6,4 +6,7 @@ tqdm
 sentencepiece
 torch
 torchvision
-sklearn_srfsuite
+sklearn-crfsuite
+torchcrf
+matplotlib
+seaborn
