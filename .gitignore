@@ -20,7 +20,7 @@ LexiDesk/data/processed/
 *.csv
 *.json
 *.jsonl
-*.tsv
+#*.tsv
 #*.txt
 
 # ======================
@@ -32,6 +32,16 @@ LexiDesk/models/**/*.joblib
 LexiDesk/models/**/*.bin
 LexiDesk/models/**/checkpoints/
 
+# --- ALLOW ONLY RHETORICAL HIERARCHICAL_BILSTM_CRF MODEL ARTIFACTS ---
+!LexiDesk/models/rhetorical/
+!LexiDesk/models/rhetorical/hierarchical_bilstm_crf/
+
+!LexiDesk/models/rhetorical/hierarchical_bilstm_crf/final_model.pt
+!LexiDesk/models/rhetorical/hierarchical_bilstm_crf/best_model.pt
+!LexiDesk/models/rhetorical/hierarchical_bilstm_crf/vocab.joblib
+!LexiDesk/models/rhetorical/hierarchical_bilstm_crf/label_encoder.joblib
+
+
 # ======================
 # EVALUATION OUTPUTS
 # ======================
@@ -39,6 +49,15 @@ LexiDesk/evaluation/**/plots/
 LexiDesk/evaluation/**/segmented_sentences/
 LexiDesk/evaluation/**/*.png
 LexiDesk/evaluation/**/*.json
+
+# --- ALLOW ONLY HIERARCHICAL_BILSTM_CRF EVALUATION RESULTS ---
+!LexiDesk/evaluation/
+!LexiDesk/evaluation/hierarchical_bilstm_crf/
+!LexiDesk/evaluation/hierarchical_bilstm_crf/**
+!LexiDesk/evaluation/hierarchical_bilstm_crf/*.png
+!LexiDesk/evaluation/hierarchical_bilstm_crf/*.json
+!LexiDesk/evaluation/hierarchical_bilstm_crf/plots/**
+
 
 # ======================
 # Logs & Runs
