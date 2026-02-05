@@ -40,6 +40,18 @@ LexiDesk/models/**/checkpoints/
 !LexiDesk/models/rhetorical/hierarchical_bilstm_crf/best_model.pt
 !LexiDesk/models/rhetorical/hierarchical_bilstm_crf/vocab.joblib
 !LexiDesk/models/rhetorical/hierarchical_bilstm_crf/label_encoder.joblib
+!LexiDesk/models/rhetorical/hierarchical_bilstm_crf/checkpoint.pth
+
+
+# --- ALLOW ONLY RHETORICAL HIERARCHICAL_BILSTM_SAFE MODEL ARTIFACTS --- USING SOFTMAX WITH HIERARCHICAL BILSTM
+!LexiDesk/models/rhetorical/
+!LexiDesk/models/rhetorical/hierarchical_bilstm_safe/
+
+!LexiDesk/models/rhetorical/hierarchical_bilstm_safe/final_model.pt
+!LexiDesk/models/rhetorical/hierarchical_bilstm_safe/best_model.pt
+!LexiDesk/models/rhetorical/hierarchical_bilstm_safe/vocab.joblib
+!LexiDesk/models/rhetorical/hierarchical_bilstm_safe/label_encoder.joblib
+!LexiDesk/models/rhetorical/hierarchical_bilstm_safe/checkpoint.pth
 
 
 # ======================
@@ -57,6 +69,16 @@ LexiDesk/evaluation/**/*.json
 !LexiDesk/evaluation/hierarchical_bilstm_crf/*.png
 !LexiDesk/evaluation/hierarchical_bilstm_crf/*.json
 !LexiDesk/evaluation/hierarchical_bilstm_crf/plots/**
+
+
+# --- ALLOW ONLY HIERARCHICAL_BILSTM_SAFE EVALUATION RESULTS --- USING SOFTMAX WITH HIERARCHICAL BILSTM
+!LexiDesk/evaluation/
+!LexiDesk/evaluation/hierarchical_bilstm_safe/
+!LexiDesk/evaluation/hierarchical_bilstm_safe/**
+!LexiDesk/evaluation/hierarchical_bilstm_safe/*.png
+!LexiDesk/evaluation/hierarchical_bilstm_safe/*.json
+!LexiDesk/evaluation/hierarchical_bilstm_safe/plots/**
+
 
 
 # ======================

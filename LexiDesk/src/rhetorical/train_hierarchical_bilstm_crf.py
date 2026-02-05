@@ -9,19 +9,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-
+from sklearn.metrics import classification_report, confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
 from torch.utils.data import Dataset, DataLoader
-
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    f1_score,
-    precision_score,
-    recall_score,
-    accuracy_score
-)
+from tqdm import tqdm  # Import tqdm for progress bar
 
 # ============================================================
 # CONFIG
@@ -39,9 +30,9 @@ LR = 1e-3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ============================================================
-# PATHS (UNCHANGED)
+# PATHS (UPDATED)
 # ============================================================
-BASE_DIR = "/content/drive/MyDrive/LexiDesk"
+BASE_DIR = "/home/csnn02/MALAVIKA_PROJECT/LEXIDESK-2/LexiDesk"
 DATA_DIR = os.path.join(BASE_DIR, "data", "processed", "rhetorical")
 MODEL_DIR = os.path.join(BASE_DIR, "models", "rhetorical", EXPERIMENT_NAME)
 EVAL_DIR = os.path.join(BASE_DIR, "evaluation", EXPERIMENT_NAME)
@@ -168,13 +159,30 @@ criterion = nn.CrossEntropyLoss()
 scaler = torch.cuda.amp.GradScaler()
 
 best_f1 = 0.0
+start_epoch = 0
 
+# Check if there's a checkpoint to resume from
+checkpoint_path = os.path.join(MODEL_DIR, "checkpoint.pth")
+if os.path.exists(checkpoint_path):
+    checkpoint = torch.load(checkpoint_path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    scaler.load_state_dict(checkpoint['scaler_state_dict'])
+    start_epoch = checkpoint['epoch']
+    best_f1 = checkpoint['best_f1']
+    print(f"Resuming training from epoch {start_epoch+1}")
 
-for epoch in range(EPOCHS):
+for epoch in range(start_epoch, EPOCHS):
     model.train()
     total_loss = 0
 
-    for X, y, m in train_loader:
+    # Adding progress bar using tqdm
+    progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}", unit="batch")
+
+    all_labels = []
+    all_preds = []
+
+    for X, y, m in progress_bar:
         X, y, m = X.to(DEVICE), y.to(DEVICE), m.to(DEVICE)
         optimizer.zero_grad()
 
@@ -192,6 +200,13 @@ for epoch in range(EPOCHS):
 
         total_loss += loss.item()
 
+        # Collecting labels and predictions for metrics
+        all_labels.extend(y.cpu().numpy())
+        all_preds.extend(logits.argmax(dim=-1).cpu().numpy())
+
+        # Update progress bar with current loss
+        progress_bar.set_postfix(loss=total_loss / (len(all_labels) / BATCH_SIZE))
+
     # ---------- VALIDATION ----------
     model.eval()
     gold, pred = [], []
@@ -204,13 +219,30 @@ for epoch in range(EPOCHS):
                 gold.extend(yi[mi].cpu())
                 pred.extend(pi[mi].cpu())
 
+    # Calculate metrics
     f1 = f1_score(gold, pred, average="macro")
+    precision = precision_score(gold, pred, average="macro")
+    recall = recall_score(gold, pred, average="macro")
+    accuracy = accuracy_score(gold, pred)
+
+    print(f"Epoch {epoch+1}/{EPOCHS} | Loss={total_loss:.4f} | "
+          f"Val Macro-F1={f1:.4f} | Precision={precision:.4f} | "
+          f"Recall={recall:.4f} | Accuracy={accuracy:.4f}")
+
+    # Save checkpoint after each epoch
+    torch.save({
+        'epoch': epoch + 1,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'scaler_state_dict': scaler.state_dict(),
+        'best_f1': best_f1,
+    }, checkpoint_path)
+
+    # If this is the best F1 score, save the model
     if f1 > best_f1:
         best_f1 = f1
         torch.save(model.state_dict(), os.path.join(MODEL_DIR, "best_model.pt"))
-
-    print(f"Epoch {epoch+1}/{EPOCHS} | Loss={total_loss:.4f} | Val Macro-F1={f1:.4f}")
-
+        
 # ============================================================
 # TEST EVALUATION
 # ============================================================
@@ -227,23 +259,25 @@ with torch.no_grad():
             gold.extend(yi[mi].cpu())
             pred.extend(pi[mi].cpu())
 
+# Calculate test metrics
+f1 = f1_score(gold, pred, average="macro")
+precision = precision_score(gold, pred, average="macro")
+recall = recall_score(gold, pred, average="macro")
+accuracy = accuracy_score(gold, pred)
+
 print("\nTEST RESULTS")
-print(classification_report(gold, pred, target_names=le.classes_))
+print(f"Macro F1: {f1:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"Accuracy: {accuracy:.4f}")
 
+# Confusion Matrix
 cm = confusion_matrix(gold, pred)
 plt.figure(figsize=(8,6))
 sns.heatmap(cm, annot=True, fmt="d",
             xticklabels=le.classes_,
             yticklabels=le.classes_)
-plt.savefig(os.path.join(EVAL_DIR, "confusion_matrix.png"))
-plt.close()
-t(gold, pred, target_names=le.classes_))
-
-cm = confusion_matrix(gold, pred)
-plt.figure(figsize=(8,6))
-sns.heatmap(cm, annot=True, fmt="d",
-            xticklabels=le.classes_,
-            yticklabels=le.classes_)
+plt.title("Confusion Matrix")
 plt.savefig(os.path.join(EVAL_DIR, "confusion_matrix.png"))
 plt.close()
 
