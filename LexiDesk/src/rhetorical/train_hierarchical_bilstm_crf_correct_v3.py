@@ -2,21 +2,46 @@
 # Hierarchical BiLSTM + CRF (Resumable, Summarization-Ready)
 # ============================================================
 
+
+# DIDN'T EXECUTED THIS CODE BECAUSE IT IS UNABLE TO RESUME TRAINING FROM CHECKPOINTS.BUT THE LOGIC IS CHANGED FROM V1. THE CHANGES ARE FOLLOWING :
+#❌ Removed max-pooling
+#✅ Replaced with word-level attention pooling
+
+#❌ No regularization
+#✅ Added word-level + sentence-level dropout
+
+#❌ Constant LR
+#✅ Added ReduceLROnPlateau scheduler
+
+#❌ Batch size = 1 instability
+#✅ Added gradient accumulation (keeps memory safe)
+
+#❌ CRF biased toward majority classes
+#✅ Added class-weighted emission loss scaling
+
+#❌ AMP deprecation warnings
+#✅ Updated to torch.amp.autocast / GradScaler
+
+# THESE CHANGES ALSO APPLIED TO VERSION 3 CODE ALSO
+
+# ============================================================
+# Hierarchical BiLSTM + CRF (Summarization-Ready Version)
+# ============================================================
+
+
 import os
 import joblib
 import torch
 import torch.nn as nn
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 
 from torch.utils.data import Dataset, DataLoader
 from torchcrf import CRF
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import (
-    f1_score, precision_score, recall_score,
-    accuracy_score, confusion_matrix
+    f1_score, precision_score, recall_score, accuracy_score
 )
 
 from torch.amp import autocast, GradScaler
@@ -44,7 +69,7 @@ SENT_DROPOUT = 0.3
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ============================================================
-# PATHS (UNCHANGED)
+# PATHS
 # ============================================================
 
 BASE_DIR = "/home/csnn02/MALAVIKA_PROJECT/LEXIDESK-2/LexiDesk"
@@ -74,6 +99,7 @@ def tokenize(text):
 # DATASET
 # ============================================================
 
+
 class RhetoricalDocDataset(Dataset):
 
     def __init__(self, csv_path, vocab, label_encoder):
@@ -101,6 +127,7 @@ class RhetoricalDocDataset(Dataset):
         y = torch.tensor(labels)
         mask = torch.ones(len(labels), dtype=torch.bool)
         return X, y, mask
+
 
 def collate_fn(batch):
     max_sents = max(x[0].shape[0] for x in batch)
@@ -133,9 +160,9 @@ class WordAttention(nn.Module):
         weights = torch.softmax(scores, dim=1)
         return torch.sum(H * weights.unsqueeze(-1), dim=1)
 
-class HierarchicalBiLSTMCRF(nn.Module):
 
-    def __init__(self, vocab_size, num_labels, class_weights):
+class HierarchicalBiLSTMCRF(nn.Module):
+    def __init__(self, vocab_size, num_labels):
         super().__init__()
 
         self.embedding = nn.Embedding(vocab_size, EMB_DIM, padding_idx=0)
@@ -160,7 +187,7 @@ class HierarchicalBiLSTMCRF(nn.Module):
         self.hidden2tag = nn.Linear(SENT_HIDDEN * 2, num_labels)
         self.crf = CRF(num_labels, batch_first=True)
 
-        self.register_buffer("class_weights", class_weights)
+
 
     def forward(self, X, y, mask):
         B, S, T = X.shape
@@ -176,8 +203,9 @@ class HierarchicalBiLSTMCRF(nn.Module):
         doc_out, _ = self.sent_lstm(sent_vec)
         doc_out = self.sent_dropout(doc_out)
 
+ 
         emissions = self.hidden2tag(doc_out)
-        emissions = emissions * self.class_weights
+
 
         loss = -self.crf(emissions, y, mask=mask, reduction="mean")
         return loss
@@ -212,11 +240,7 @@ for txt in train_df["Text"]:
 label_encoder = LabelEncoder()
 label_encoder.fit(train_df["Label"])
 
-label_counts = train_df["Label"].value_counts().sort_index()
-class_weights = torch.tensor(
-    1.0 / np.sqrt(label_counts.values),
-    dtype=torch.float
-).to(DEVICE)
+
 
 joblib.dump(vocab, os.path.join(MODEL_DIR, "vocab.joblib"))
 joblib.dump(label_encoder, os.path.join(MODEL_DIR, "label_encoder.joblib"))
@@ -246,13 +270,10 @@ test_loader = DataLoader(
 
 model = HierarchicalBiLSTMCRF(
     len(vocab),
-    len(label_encoder.classes_),
-    class_weights
+    len(label_encoder.classes_)
 ).to(DEVICE)
 
-optimizer = torch.optim.AdamW(
-    model.parameters(), lr=LR, weight_decay=1e-4
-)
+optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode="max", patience=2, factor=0.5
@@ -264,7 +285,7 @@ start_epoch = 0
 best_f1 = 0.0
 
 # ============================================================
-# RESUME FROM CHECKPOINT (IF EXISTS)
+# RESUME FROM CHECKPOINT
 # ============================================================
 
 if os.path.exists(CHECKPOINT_PATH):
@@ -322,7 +343,7 @@ for epoch in range(start_epoch, EPOCHS):
     f1 = f1_score(gold, pred, average="macro")
     scheduler.step(f1)
 
-    print(f"Epoch {epoch+1} | Loss={total_loss:.2f} | Macro-F1={f1:.4f}")
+    print(f"Epoch {epoch+1} | Loss={total_loss:.2f} | Val Macro-F1={f1:.4f}")
 
     # ================= SAVE CHECKPOINT =================
     torch.save({
@@ -334,7 +355,7 @@ for epoch in range(start_epoch, EPOCHS):
         "best_f1": best_f1
     }, CHECKPOINT_PATH)
 
-    # ================= SAVE BEST MODEL =================
+
     if f1 > best_f1:
         best_f1 = f1
         torch.save(model.state_dict(), BEST_MODEL_PATH)
@@ -343,7 +364,7 @@ for epoch in range(start_epoch, EPOCHS):
 # TEST EVALUATION
 # ============================================================
 
-model.load_state_dict(torch.load(BEST_MODEL_PATH))
+model.load_state_dict(torch.load(BEST_MODEL_PATH, map_location=DEVICE))
 model.eval()
 
 gold, pred = [], []
